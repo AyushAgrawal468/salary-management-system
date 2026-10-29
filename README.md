@@ -29,6 +29,14 @@ cd backend && ./mvnw spring-boot:run
 cd frontend && npm ci && npm start
 ```
 
+## Demo data
+```bash
+# Inserts 10,000 employees (~54k salary entries, 8 countries) on startup; skipped if any employees exist.
+cd backend && APP_SEED_ENABLED=true ./mvnw spring-boot:run
+```
+`APP_SEED_EMPLOYEES` changes the count. Seeding is off unless explicitly enabled. Data is generated
+from a fixed random seed, so names, pay bands and histories are the same on every machine.
+
 ## Test
 ```bash
 cd backend && ./mvnw test
