@@ -29,16 +29,27 @@ public class EmployeeService {
     }
 
     public Employee update(UUID id, UpdateEmployeeRequest request) {
-        Employee employee = get(id);
-        if (employee.getVersion() != request.version()) {
-            throw new StaleEmployeeException();
-        }
+        Employee employee = getAtVersion(id, request.version());
         employee.update(request);
+        return repository.saveAndFlush(employee);
+    }
+
+    public Employee terminate(UUID id, TerminateEmployeeRequest request) {
+        Employee employee = getAtVersion(id, request.version());
+        employee.terminate(request.terminationDate());
         return repository.saveAndFlush(employee);
     }
 
     @Transactional(readOnly = true)
     public Employee get(UUID id) {
         return repository.findById(id).orElseThrow(() -> new EmployeeNotFoundException(id));
+    }
+
+    private Employee getAtVersion(UUID id, long expectedVersion) {
+        Employee employee = get(id);
+        if (employee.getVersion() != expectedVersion) {
+            throw new StaleEmployeeException();
+        }
+        return employee;
     }
 }

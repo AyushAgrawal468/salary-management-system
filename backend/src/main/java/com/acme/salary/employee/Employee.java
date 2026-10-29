@@ -9,6 +9,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -50,6 +52,8 @@ public class Employee {
     @Column(nullable = false)
     private EmployeeStatus status = EmployeeStatus.ACTIVE;
 
+    private LocalDate terminationDate;
+
     // Optimistic locking: a stale concurrent edit fails instead of silently overwriting.
     @Version
     private long version;
@@ -80,6 +84,18 @@ public class Employee {
         this.hireDate = r.hireDate();
     }
 
+    /** Records are kept after termination: pay history must stay reportable and auditable. */
+    void terminate(LocalDate date) {
+        if (status == EmployeeStatus.TERMINATED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Employee is already terminated");
+        }
+        if (date.isBefore(hireDate)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Termination date cannot be before hire date");
+        }
+        this.status = EmployeeStatus.TERMINATED;
+        this.terminationDate = date;
+    }
+
     public UUID getId() { return id; }
     public String getEmployeeCode() { return employeeCode; }
     public String getFullName() { return fullName; }
@@ -90,5 +106,6 @@ public class Employee {
     public String getPhone() { return phone; }
     public LocalDate getHireDate() { return hireDate; }
     public EmployeeStatus getStatus() { return status; }
+    public LocalDate getTerminationDate() { return terminationDate; }
     public long getVersion() { return version; }
 }

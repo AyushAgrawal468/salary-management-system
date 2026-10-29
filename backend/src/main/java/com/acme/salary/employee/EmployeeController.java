@@ -40,4 +40,9 @@ class EmployeeController {
     EmployeeResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateEmployeeRequest request) {
         return EmployeeResponse.from(service.update(id, request));
     }
+
+    @PostMapping("/{id}/termination")
+    EmployeeResponse terminate(@PathVariable UUID id, @Valid @RequestBody TerminateEmployeeRequest request) {
+        return EmployeeResponse.from(service.terminate(id, request));
+    }
 }

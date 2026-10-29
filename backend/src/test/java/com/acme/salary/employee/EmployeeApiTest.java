@@ -146,6 +146,56 @@ class EmployeeApiTest {
                 .andExpect(jsonPath("$.errors.version").exists());
     }
 
+    @Test
+    void terminatesEmployee() throws Exception {
+        String location = createAndGetLocation();
+
+        terminate(location, """
+                {"terminationDate":"2025-01-31","version":0}
+                """)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("TERMINATED"))
+                .andExpect(jsonPath("$.terminationDate").value("2025-01-31"))
+                .andExpect(jsonPath("$.version").value(1));
+
+        mvc.perform(get(location)).andExpect(jsonPath("$.status").value("TERMINATED"));
+    }
+
+    @Test
+    void terminationNeedsDateAndVersion() throws Exception {
+        String location = createAndGetLocation();
+
+        terminate(location, "{}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.terminationDate").exists())
+                .andExpect(jsonPath("$.errors.version").exists());
+    }
+
+    @Test
+    void terminationWithStaleVersionIs409() throws Exception {
+        String location = createAndGetLocation();
+        update(location, UPDATE_V0).andExpect(status().isOk());
+
+        terminate(location, """
+                {"terminationDate":"2025-01-31","version":0}
+                """).andExpect(status().isConflict());
+    }
+
+    @Test
+    void terminationBeforeHireDateIs400() throws Exception {
+        String location = createAndGetLocation();
+
+        terminate(location, """
+                {"terminationDate":"2020-01-01","version":0}
+                """)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Termination date cannot be before hire date"));
+    }
+
+    private ResultActions terminate(String location, String json) throws Exception {
+        return mvc.perform(post(location + "/termination").contentType(MediaType.APPLICATION_JSON).content(json));
+    }
+
     private String createAndGetLocation() throws Exception {
         return create(VALID).andReturn().getResponse().getHeader("Location");
     }
