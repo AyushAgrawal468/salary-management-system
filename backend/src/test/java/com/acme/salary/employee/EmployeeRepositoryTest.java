@@ -4,8 +4,11 @@ import com.acme.salary.FlywayTestConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.LocalDate;
 
@@ -18,6 +21,12 @@ class EmployeeRepositoryTest {
 
     @Autowired
     EmployeeRepository repository;
+
+    @Autowired
+    TestEntityManager entityManager;
+
+    @Autowired
+    JdbcTemplate jdbc;
 
     @Test
     void savesAndReloadsAllFields() {
@@ -56,6 +65,17 @@ class EmployeeRepositoryTest {
 
         assertThat(repository.findByEmployeeCode("EMP-0004")).isPresent();
         assertThat(repository.findByEmployeeCode("EMP-9999")).isEmpty();
+    }
+
+    @Test
+    void concurrentWriteWithStaleVersionFails() {
+        Employee mine = repository.saveAndFlush(employee("EMP-0005"));
+        entityManager.detach(mine);
+        // Someone else saves first and bumps the version.
+        jdbc.update("UPDATE employee SET version = version + 1 WHERE id = ?", mine.getId());
+
+        assertThatThrownBy(() -> repository.saveAndFlush(mine))
+                .isInstanceOf(OptimisticLockingFailureException.class);
     }
 
     private static Employee employee(String code) {

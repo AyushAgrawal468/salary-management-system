@@ -1,10 +1,13 @@
 package com.acme.salary.web;
 
+import com.acme.salary.employee.StaleEmployeeException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
@@ -30,5 +33,12 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setDetail("Request has invalid fields");
         problem.setProperty("errors", errors);
         return handleExceptionInternal(ex, problem, headers, status, request);
+    }
+
+    /** Two saves raced past the version check; the loser gets the same answer as a stale version. */
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    ResponseEntity<Object> handleConcurrentUpdate(OptimisticLockingFailureException ex, WebRequest request) {
+        var stale = new StaleEmployeeException();
+        return handleErrorResponseException(stale, stale.getHeaders(), stale.getStatusCode(), request);
     }
 }

@@ -28,6 +28,15 @@ public class EmployeeService {
         }
     }
 
+    public Employee update(UUID id, UpdateEmployeeRequest request) {
+        Employee employee = get(id);
+        if (employee.getVersion() != request.version()) {
+            throw new StaleEmployeeException();
+        }
+        employee.update(request);
+        return repository.saveAndFlush(employee);
+    }
+
     @Transactional(readOnly = true)
     public Employee get(UUID id) {
         return repository.findById(id).orElseThrow(() -> new EmployeeNotFoundException(id));

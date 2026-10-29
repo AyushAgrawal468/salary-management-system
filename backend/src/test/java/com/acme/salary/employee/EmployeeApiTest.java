@@ -16,6 +16,7 @@ import java.util.UUID;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -94,6 +95,63 @@ class EmployeeApiTest {
     @Test
     void malformedJsonIs400() throws Exception {
         create("{not json").andExpect(status().isBadRequest());
+    }
+
+    static final String UPDATE_V0 = """
+            {"fullName":"Asha Menon","jobTitle":"Senior Software Engineer","department":"Platform",
+             "country":"SG","workEmail":"asha.menon@acme.com","phone":null,"hireDate":"2022-04-01","version":0}
+            """;
+
+    @Test
+    void updatesEmployeeAndBumpsVersion() throws Exception {
+        String location = createAndGetLocation();
+
+        update(location, UPDATE_V0)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.employeeCode").value("EMP-0001"))
+                .andExpect(jsonPath("$.fullName").value("Asha Menon"))
+                .andExpect(jsonPath("$.jobTitle").value("Senior Software Engineer"))
+                .andExpect(jsonPath("$.department").value("Platform"))
+                .andExpect(jsonPath("$.country").value("SG"))
+                .andExpect(jsonPath("$.phone").doesNotExist())
+                .andExpect(jsonPath("$.version").value(1));
+    }
+
+    @Test
+    void staleVersionIs409() throws Exception {
+        String location = createAndGetLocation();
+        update(location, UPDATE_V0).andExpect(status().isOk());
+
+        update(location, UPDATE_V0)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value(
+                        "Employee was modified by someone else; reload and try again"));
+    }
+
+    @Test
+    void updatingUnknownEmployeeIs404() throws Exception {
+        update("/api/employees/" + UUID.randomUUID(), UPDATE_V0).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updateRequiresVersionAndValidFields() throws Exception {
+        String location = createAndGetLocation();
+
+        update(location, """
+                {"fullName":"","jobTitle":"Engineer","department":"Engineering",
+                 "country":"IN","workEmail":"asha@acme.com","hireDate":"2022-04-01"}
+                """)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.fullName").exists())
+                .andExpect(jsonPath("$.errors.version").exists());
+    }
+
+    private String createAndGetLocation() throws Exception {
+        return create(VALID).andReturn().getResponse().getHeader("Location");
+    }
+
+    private ResultActions update(String location, String json) throws Exception {
+        return mvc.perform(put(location).contentType(MediaType.APPLICATION_JSON).content(json));
     }
 
     private ResultActions create(String json) throws Exception {

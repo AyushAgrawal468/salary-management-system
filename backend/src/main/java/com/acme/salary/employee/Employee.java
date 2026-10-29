@@ -70,6 +70,16 @@ public class Employee {
         this.hireDate = hireDate;
     }
 
+    void update(UpdateEmployeeRequest r) {
+        this.fullName = r.fullName();
+        this.jobTitle = r.jobTitle();
+        this.department = r.department();
+        this.country = r.country();
+        this.workEmail = r.workEmail();
+        this.phone = r.phone();
+        this.hireDate = r.hireDate();
+    }
+
     public UUID getId() { return id; }
     public String getEmployeeCode() { return employeeCode; }
     public String getFullName() { return fullName; }
