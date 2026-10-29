@@ -2,6 +2,9 @@ package com.acme.salary.web;
 
 import com.acme.salary.employee.StaleEmployeeException;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.core.PropertyReferenceException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +30,11 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         Map<String, String> errors = new LinkedHashMap<>();
         for (FieldError error : ex.getBindingResult().getFieldErrors()) {
-            errors.putIfAbsent(error.getField(), error.getDefaultMessage());
+            // Type-conversion failures carry Java class names; don't expose those to clients.
+            String message = error.isBindingFailure()
+                    ? "Invalid value: " + error.getRejectedValue()
+                    : error.getDefaultMessage();
+            errors.putIfAbsent(error.getField(), message);
         }
         var problem = ex.getBody();
         problem.setDetail("Request has invalid fields");
@@ -40,5 +47,11 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     ResponseEntity<Object> handleConcurrentUpdate(OptimisticLockingFailureException ex, WebRequest request) {
         var stale = new StaleEmployeeException();
         return handleErrorResponseException(stale, stale.getHeaders(), stale.getStatusCode(), request);
+    }
+
+    /** e.g. ?sort=salary on a resource without that property. */
+    @ExceptionHandler(PropertyReferenceException.class)
+    ProblemDetail handleUnknownProperty(PropertyReferenceException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Unknown property: " + ex.getPropertyName());
     }
 }
