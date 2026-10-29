@@ -57,6 +57,32 @@ class EmployeeTest {
         assertThat(employee.getTerminationDate()).isEqualTo(LocalDate.of(2025, 1, 31));
     }
 
+    @Test
+    void isEmployedFromHireDateOnwards() {
+        Employee employee = employee();
+
+        employee.requireEmployedOn(HIRED);
+        employee.requireEmployedOn(HIRED.plusYears(5));
+
+        assertThatThrownBy(() -> employee.requireEmployedOn(HIRED.minusDays(1)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("before hire date")
+                .extracting(e -> ((ResponseStatusException) e).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void isNotEmployedAfterTerminationDate() {
+        Employee employee = employee();
+        employee.terminate(LocalDate.of(2025, 1, 31));
+
+        employee.requireEmployedOn(LocalDate.of(2025, 1, 31));
+
+        assertThatThrownBy(() -> employee.requireEmployedOn(LocalDate.of(2025, 2, 1)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("after termination date");
+    }
+
     private static Employee employee() {
         return new Employee("EMP-0001", "Asha Rao", "Software Engineer", "Engineering", "IN",
                 "asha.rao@acme.com", null, HIRED);

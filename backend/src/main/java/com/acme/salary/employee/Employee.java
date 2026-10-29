@@ -96,6 +96,17 @@ public class Employee {
         this.terminationDate = date;
     }
 
+    /** Pay can only be recorded for dates this person actually worked here. */
+    public void requireEmployedOn(LocalDate date) {
+        if (date.isBefore(hireDate)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Date is before hire date " + hireDate);
+        }
+        if (terminationDate != null && date.isAfter(terminationDate)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Date is after termination date " + terminationDate);
+        }
+    }
+
     public UUID getId() { return id; }
     public String getEmployeeCode() { return employeeCode; }
     public String getFullName() { return fullName; }

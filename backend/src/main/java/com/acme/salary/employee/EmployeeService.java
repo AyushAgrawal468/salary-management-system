@@ -5,8 +5,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 
@@ -15,9 +17,11 @@ import java.util.UUID;
 public class EmployeeService {
 
     private final EmployeeRepository repository;
+    private final SalaryRecordRepository salaries;
 
-    EmployeeService(EmployeeRepository repository) {
+    EmployeeService(EmployeeRepository repository, SalaryRecordRepository salaries) {
         this.repository = repository;
+        this.salaries = salaries;
     }
 
     public Employee create(CreateEmployeeRequest request) {
@@ -40,6 +44,10 @@ public class EmployeeService {
 
     public Employee terminate(UUID id, TerminateEmployeeRequest request) {
         Employee employee = getAtVersion(id, request.version());
+        if (salaries.existsByEmployeeIdAndEffectiveDateAfter(id, request.terminationDate())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Employee has salary entries after " + request.terminationDate());
+        }
         employee.terminate(request.terminationDate());
         return repository.saveAndFlush(employee);
     }
