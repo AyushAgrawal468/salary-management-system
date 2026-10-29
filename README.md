@@ -11,6 +11,14 @@ See [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) for scope and decisions.
 ## Prerequisites
 - JDK 21
 - Node.js 22.12+ (npm)
+- PostgreSQL (tested on 18) running on `localhost:5432`
+
+## Database setup (once)
+```bash
+psql -U postgres -f backend/scripts/create-local-db.sql
+```
+Creates the `salary_app` login plus `salary` (app) and `salary_test` (tests; wiped on every test run).
+Override with `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` (and `TEST_DB_URL` for tests).
 
 ## Run locally
 ```bash
