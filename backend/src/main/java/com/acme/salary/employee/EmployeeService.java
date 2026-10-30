@@ -61,6 +61,12 @@ public class EmployeeService {
     }
 
     @Transactional(readOnly = true)
+    public EmployeeFilters filters() {
+        return new EmployeeFilters(repository.distinctCountries(), repository.distinctDepartments(),
+                repository.distinctJobTitles());
+    }
+
+    @Transactional(readOnly = true)
     public Employee get(UUID id) {
         return repository.findById(id).orElseThrow(() -> new EmployeeNotFoundException(id));
     }

@@ -8,10 +8,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.Currency;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -20,11 +25,14 @@ public class SalaryService {
     private final EmployeeRepository employees;
     private final SalaryRecordRepository salaries;
     private final EntityManager entityManager;
+    private final Clock clock;
 
-    SalaryService(EmployeeRepository employees, SalaryRecordRepository salaries, EntityManager entityManager) {
+    SalaryService(EmployeeRepository employees, SalaryRecordRepository salaries, EntityManager entityManager,
+                  Clock clock) {
         this.employees = employees;
         this.salaries = salaries;
         this.entityManager = entityManager;
+        this.clock = clock;
     }
 
     public SalaryRecord add(UUID employeeId, AddSalaryRequest request) {
@@ -51,6 +59,16 @@ public class SalaryService {
             throw new EmployeeNotFoundException(employeeId);
         }
         return salaries.findByEmployeeIdOrderByEffectiveDateDesc(employeeId);
+    }
+
+    /** Salary in effect today for each employee that has one; a single query for any number of ids. */
+    @Transactional(readOnly = true)
+    public Map<UUID, SalaryRecord> currentSalaries(Collection<UUID> employeeIds) {
+        if (employeeIds.isEmpty()) {
+            return Map.of();
+        }
+        return salaries.findCurrentFor(employeeIds, LocalDate.now(clock)).stream()
+                .collect(Collectors.toMap(SalaryRecord::getEmployeeId, Function.identity()));
     }
 
     private static void requireKnownCurrency(String code) {

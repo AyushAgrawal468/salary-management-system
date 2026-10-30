@@ -169,6 +169,27 @@ class SalaryApiTest {
                 .andExpect(jsonPath("$.detail").value("Date is after termination date 2024-03-31"));
     }
 
+    @Test
+    void employeeShowsSalaryCurrentlyInEffect() throws Exception {
+        add(salaries, entry("2022-04-01", 1500000)).andExpect(status().isCreated());
+        add(salaries, entry("2024-04-01", 1900000)).andExpect(status().isCreated());
+        // A scheduled raise is history-to-be, not today's pay.
+        add(salaries, entry("2099-04-01", 9900000)).andExpect(status().isCreated());
+
+        mvc.perform(get(employeeUrl))
+                .andExpect(jsonPath("$.currentSalary.amount").value(1900000))
+                .andExpect(jsonPath("$.currentSalary.currency").value("INR"))
+                .andExpect(jsonPath("$.currentSalary.effectiveDate").value("2024-04-01"));
+        mvc.perform(get("/api/employees"))
+                .andExpect(jsonPath("$.content[0].currentSalary.amount").value(1900000));
+    }
+
+    @Test
+    void employeeWithoutSalaryHasNoCurrentSalary() throws Exception {
+        mvc.perform(get(employeeUrl)).andExpect(jsonPath("$.currentSalary").isEmpty());
+        mvc.perform(get("/api/employees")).andExpect(jsonPath("$.content[0].currentSalary").isEmpty());
+    }
+
     private static String entry(String date, long amount) {
         return """
                 {"amount":%d,"currency":"INR","effectiveDate":"%s"}

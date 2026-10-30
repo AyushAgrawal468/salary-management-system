@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -21,14 +23,23 @@ import java.util.UUID;
 class EmployeeController {
 
     private final EmployeeService service;
+    private final SalaryService salaries;
 
-    EmployeeController(EmployeeService service) {
+    EmployeeController(EmployeeService service, SalaryService salaries) {
         this.service = service;
+        this.salaries = salaries;
     }
 
     @GetMapping
     Page<EmployeeResponse> list(EmployeeSearch search, @PageableDefault(size = 20, sort = "fullName") Pageable pageable) {
-        return service.search(search, pageable).map(EmployeeResponse::from);
+        Page<Employee> page = service.search(search, pageable);
+        Map<UUID, SalaryRecord> current = salaries.currentSalaries(page.map(Employee::getId).getContent());
+        return page.map(e -> EmployeeResponse.from(e, current.get(e.getId())));
+    }
+
+    @GetMapping("/filters")
+    EmployeeFilters filters() {
+        return service.filters();
     }
 
     @PostMapping
@@ -36,21 +47,25 @@ class EmployeeController {
         Employee created = service.create(request);
         var location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}").buildAndExpand(created.getId()).toUri();
-        return ResponseEntity.created(location).body(EmployeeResponse.from(created));
+        return ResponseEntity.created(location).body(respond(created));
     }
 
     @GetMapping("/{id}")
     EmployeeResponse get(@PathVariable UUID id) {
-        return EmployeeResponse.from(service.get(id));
+        return respond(service.get(id));
     }
 
     @PutMapping("/{id}")
     EmployeeResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateEmployeeRequest request) {
-        return EmployeeResponse.from(service.update(id, request));
+        return respond(service.update(id, request));
     }
 
     @PostMapping("/{id}/termination")
     EmployeeResponse terminate(@PathVariable UUID id, @Valid @RequestBody TerminateEmployeeRequest request) {
-        return EmployeeResponse.from(service.terminate(id, request));
+        return respond(service.terminate(id, request));
+    }
+
+    private EmployeeResponse respond(Employee employee) {
+        return EmployeeResponse.from(employee, salaries.currentSalaries(List.of(employee.getId())).get(employee.getId()));
     }
 }

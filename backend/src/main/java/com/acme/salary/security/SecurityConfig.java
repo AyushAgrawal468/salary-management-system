@@ -19,8 +19,6 @@ import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import java.time.Clock;
-
 /**
  * Session-cookie auth for a same-origin SPA. Every /api/** call needs a logged-in user;
  * reads are open to all roles, changes to HR managers and admins. CSRF uses the cookie/header
@@ -78,10 +76,6 @@ class SecurityConfig implements WebMvcConfigurer {
         return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
 
-    @Bean
-    Clock clock() {
-        return Clock.systemUTC();
-    }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {

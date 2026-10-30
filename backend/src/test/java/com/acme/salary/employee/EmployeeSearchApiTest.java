@@ -114,6 +114,16 @@ class EmployeeSearchApiTest {
                 .andExpect(jsonPath("$.errors.status").value("Invalid value: RETIRED"));
     }
 
+    @Test
+    void listsFilterValuesFromTheData() throws Exception {
+        mvc.perform(get("/api/employees/filters"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.countries", contains("IN", "SG", "US")))
+                .andExpect(jsonPath("$.departments", contains("Engineering", "Finance", "People", "Sales")))
+                .andExpect(jsonPath("$.jobTitles",
+                        contains("Data Analyst", "Recruiter", "Sales Manager", "Software Engineer")));
+    }
+
     private static Employee employee(String code, String name, String title, String department, String country) {
         String email = name.toLowerCase().replace(' ', '.') + "@acme.com";
         return new Employee(code, name, title, department, country, email, null, LocalDate.of(2020, 1, 1));
