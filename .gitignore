@@ -3,3 +3,6 @@
 .vscode/
 .DS_Store
 Thumbs.db
+
+# UI build copied in by the Dockerfile; never committed
+backend/src/main/resources/static/
