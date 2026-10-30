@@ -1,6 +1,10 @@
 package com.acme.salary.seed;
 
+import com.acme.salary.security.Role;
+import com.acme.salary.security.UserAccount;
+import com.acme.salary.security.UserAccountRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,10 +25,36 @@ class Seeder {
 
     private static final long SEED = 42;
 
-    private final JdbcTemplate jdbc;
+    private static final int MIN_PASSWORD_LENGTH = 12;
 
-    Seeder(JdbcTemplate jdbc) {
+    private final JdbcTemplate jdbc;
+    private final UserAccountRepository users;
+    private final PasswordEncoder encoder;
+
+    Seeder(JdbcTemplate jdbc, UserAccountRepository users, PasswordEncoder encoder) {
         this.jdbc = jdbc;
+        this.users = users;
+        this.encoder = encoder;
+    }
+
+    /**
+     * One shared login per role for reviewers of a demo deployment. Skipped once any user exists,
+     * so it never touches a database with real accounts.
+     *
+     * @return logins created
+     */
+    @Transactional
+    public int seedDemoUsers(String password) {
+        if (password == null || password.length() < MIN_PASSWORD_LENGTH || users.count() > 0) {
+            return 0;
+        }
+        String hash = encoder.encode(password);
+        // Not forced to change: they are shared, and one reviewer changing it would lock out the rest.
+        users.saveAll(List.of(
+                new UserAccount("admin", hash, Role.ADMIN, false),
+                new UserAccount("hr", hash, Role.HR_MANAGER, false),
+                new UserAccount("viewer", hash, Role.VIEWER, false)));
+        return 3;
     }
 
     /** @return employees inserted; 0 when the database already has employees. */

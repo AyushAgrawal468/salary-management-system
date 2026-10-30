@@ -42,11 +42,13 @@ Passwords are stored as BCrypt hashes. Five wrong passwords lock an account for 
 
 ## Demo data
 ```bash
-# Inserts 10,000 employees (~54k salary entries, 8 countries) on startup; skipped if any employees exist.
-cd backend && APP_SEED_ENABLED=true ./mvnw spring-boot:run
+# 10,000 employees (~54k salary entries, 8 countries), skipped if any employees exist, plus
+# demo logins admin / hr / viewer sharing one password, skipped if any user exists.
+cd backend && APP_SEED_ENABLED=true APP_SEED_DEMO_PASSWORD='<12+ characters>' ./mvnw spring-boot:run
 ```
-`APP_SEED_EMPLOYEES` changes the count. Seeding is off unless explicitly enabled. Data is generated
-from a fixed random seed, so names, pay bands and histories are the same on every machine.
+`APP_SEED_EMPLOYEES` changes the count. Seeding is off unless explicitly enabled, so a real
+deployment never gets demo data or demo logins; there, create accounts with the script above.
+Data is generated from a fixed random seed, so names, pay bands and histories match on every machine.
 
 ## Test
 ```bash
