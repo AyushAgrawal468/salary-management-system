@@ -43,8 +43,8 @@ class AccessRulesTest {
     @Test
     void healthAndUiArePublic() throws Exception {
         mvc.perform(get("/actuator/health")).andExpect(status().isOk());
-        // Unknown non-API paths are the SPA's business: not found, never "log in first".
-        mvc.perform(get("/employees/some-page")).andExpect(status().isNotFound());
+        // Non-API paths are the SPA's business (see SpaFallbackTest): never "log in first".
+        mvc.perform(get("/employees/some-page")).andExpect(status().isOk());
     }
 
     @Test
