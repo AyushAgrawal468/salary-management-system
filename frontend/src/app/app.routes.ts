@@ -15,7 +15,14 @@ export const routes: Routes = [
     title: 'Salary Management',
     component: Shell,
     canActivate: [authGuard],
-    children: [],
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'employees' },
+      {
+        path: 'employees',
+        title: 'Employees',
+        loadComponent: () => import('./employees/employee-list.page').then(m => m.EmployeeListPage),
+      },
+    ],
   },
   { path: '**', redirectTo: '' },
 ];
