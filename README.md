@@ -29,6 +29,15 @@ cd backend && ./mvnw spring-boot:run
 cd frontend && npm ci && npm start
 ```
 
+## First login
+All `/api/**` endpoints require a session. On a database with no users, the app creates the first
+`ADMIN` from two environment variables, then must be logged into once to replace that password:
+```bash
+cd backend && APP_ADMIN_USERNAME=admin APP_ADMIN_PASSWORD='<temporary password>' ./mvnw spring-boot:run
+```
+Roles: `ADMIN` (everything), `HR_MANAGER` (edit employees and salaries), `VIEWER` (read-only).
+Five wrong passwords lock an account for 15 minutes.
+
 ## Demo data
 ```bash
 # Inserts 10,000 employees (~54k salary entries, 8 countries) on startup; skipped if any employees exist.

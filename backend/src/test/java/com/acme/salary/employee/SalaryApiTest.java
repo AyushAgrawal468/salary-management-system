@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -18,6 +19,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.matchesPattern;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -28,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @Import(FlywayTestConfig.class)
+@WithMockUser(roles = "HR_MANAGER")
 class SalaryApiTest {
 
     @Autowired
@@ -146,7 +149,7 @@ class SalaryApiTest {
     void cannotTerminateBeforeExistingSalaryEntry() throws Exception {
         add(salaries, entry("2024-04-01", 100)).andExpect(status().isCreated());
 
-        mvc.perform(post(employeeUrl + "/termination").contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(post(employeeUrl + "/termination").with(csrf()).contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"terminationDate":"2024-03-31","version":1}
                                 """))
@@ -156,7 +159,7 @@ class SalaryApiTest {
 
     @Test
     void cannotAddSalaryAfterTermination() throws Exception {
-        mvc.perform(post(employeeUrl + "/termination").contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(post(employeeUrl + "/termination").with(csrf()).contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"terminationDate":"2024-03-31","version":0}
                         """)).andExpect(status().isOk());
@@ -173,6 +176,6 @@ class SalaryApiTest {
     }
 
     private ResultActions add(String url, String json) throws Exception {
-        return mvc.perform(post(url).contentType(MediaType.APPLICATION_JSON).content(json));
+        return mvc.perform(post(url).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json));
     }
 }

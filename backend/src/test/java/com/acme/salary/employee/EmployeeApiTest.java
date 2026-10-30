@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.matchesPattern;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -25,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @Import(FlywayTestConfig.class)
+@WithMockUser(roles = "HR_MANAGER")
 class EmployeeApiTest {
 
     static final String VALID = """
@@ -193,7 +196,7 @@ class EmployeeApiTest {
     }
 
     private ResultActions terminate(String location, String json) throws Exception {
-        return mvc.perform(post(location + "/termination").contentType(MediaType.APPLICATION_JSON).content(json));
+        return mvc.perform(post(location + "/termination").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json));
     }
 
     private String createAndGetLocation() throws Exception {
@@ -201,10 +204,10 @@ class EmployeeApiTest {
     }
 
     private ResultActions update(String location, String json) throws Exception {
-        return mvc.perform(put(location).contentType(MediaType.APPLICATION_JSON).content(json));
+        return mvc.perform(put(location).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json));
     }
 
     private ResultActions create(String json) throws Exception {
-        return mvc.perform(post("/api/employees").contentType(MediaType.APPLICATION_JSON).content(json));
+        return mvc.perform(post("/api/employees").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json));
     }
 }
