@@ -9,3 +9,9 @@ export function countryName(code: string): string {
 export function formatMoney(amount: number, currency: string): string {
   return new Intl.NumberFormat(navigator.language, { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount);
 }
+
+/** "2024-04-01" -> "1 Apr 2024" (viewer's locale). Read as UTC so no time zone shifts the day. */
+export function formatDate(isoDate: string): string {
+  return new Intl.DateTimeFormat(navigator.language, { dateStyle: 'medium', timeZone: 'UTC' })
+    .format(new Date(`${isoDate}T00:00:00Z`));
+}

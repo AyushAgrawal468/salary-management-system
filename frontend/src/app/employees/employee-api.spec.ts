@@ -34,4 +34,23 @@ describe('EmployeeApi', () => {
 
     expect(await result).toEqual({ countries: ['IN'], departments: ['Sales'], jobTitles: ['Recruiter'] });
   });
+
+  it('reaches each employee endpoint with the right method and body', () => {
+    const details = { fullName: 'A', jobTitle: 'B', department: 'C', country: 'IN', workEmail: 'a@b.c', phone: null, hireDate: '2020-01-01' };
+
+    api.get('e1').subscribe();
+    api.create({ ...details, employeeCode: 'EMP-1' }).subscribe();
+    api.update('e1', { ...details, version: 3 }).subscribe();
+    api.terminate('e1', { terminationDate: '2025-01-31', version: 3 }).subscribe();
+    api.salaries('e1').subscribe();
+    api.addSalary('e1', { amount: 100, currency: 'INR', effectiveDate: '2025-04-01' }).subscribe();
+
+    expect(http.expectOne({ method: 'GET', url: '/api/employees/e1' })).toBeTruthy();
+    expect(http.expectOne({ method: 'POST', url: '/api/employees' }).request.body.employeeCode).toBe('EMP-1');
+    expect(http.expectOne({ method: 'PUT', url: '/api/employees/e1' }).request.body.version).toBe(3);
+    expect(http.expectOne({ method: 'POST', url: '/api/employees/e1/termination' }).request.body)
+      .toEqual({ terminationDate: '2025-01-31', version: 3 });
+    expect(http.expectOne({ method: 'GET', url: '/api/employees/e1/salaries' })).toBeTruthy();
+    expect(http.expectOne({ method: 'POST', url: '/api/employees/e1/salaries' }).request.body.amount).toBe(100);
+  });
 });
