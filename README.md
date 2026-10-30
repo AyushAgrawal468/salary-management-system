@@ -29,14 +29,16 @@ cd backend && ./mvnw spring-boot:run
 cd frontend && npm ci && npm start
 ```
 
-## First login
-All `/api/**` endpoints require a session. On a database with no users, the app creates the first
-`ADMIN` from two environment variables, then must be logged into once to replace that password:
+## Users
+All `/api/**` endpoints require a login. Each person has their own account in the `app_user` table,
+created with a temporary password they must replace at first login (the app is started at least
+once beforehand so the table exists):
 ```bash
-cd backend && APP_ADMIN_USERNAME=admin APP_ADMIN_PASSWORD='<temporary password>' ./mvnw spring-boot:run
+psql "<connection>" -v username=asha.rao -v role=HR_MANAGER -v password='<temporary password>' \
+     -f backend/scripts/create-user.sql
 ```
 Roles: `ADMIN` (everything), `HR_MANAGER` (edit employees and salaries), `VIEWER` (read-only).
-Five wrong passwords lock an account for 15 minutes.
+Passwords are stored as BCrypt hashes. Five wrong passwords lock an account for 15 minutes.
 
 ## Demo data
 ```bash
